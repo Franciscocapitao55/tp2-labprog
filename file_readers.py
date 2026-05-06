@@ -1,0 +1,43 @@
+from pathlib import Path
+from typing import BinaryIO
+
+from pypdf import PdfReader
+from docx import Document
+
+
+def extract_text_from_txt(file: BinaryIO) -> str:
+    data = file.read()
+    if isinstance(data, str):
+        return data
+    for encoding in ("utf-8", "latin-1", "cp1252"):
+        try:
+            return data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace")
+
+
+def extract_text_from_pdf(file: BinaryIO) -> str:
+    reader = PdfReader(file)
+    pages = []
+    for index, page in enumerate(reader.pages, start=1):
+        text = page.extract_text() or ""
+        pages.append(f"\n--- Página {index} ---\n{text}")
+    return "\n".join(pages).strip()
+
+
+def extract_text_from_docx(file: BinaryIO) -> str:
+    document = Document(file)
+    paragraphs = [p.text for p in document.paragraphs]
+    return "\n".join(paragraphs).strip()
+
+
+def extract_text(uploaded_file) -> str:
+    suffix = Path(uploaded_file.name).suffix.lower()
+    if suffix == ".txt":
+        return extract_text_from_txt(uploaded_file)
+    if suffix == ".pdf":
+        return extract_text_from_pdf(uploaded_file)
+    if suffix == ".docx":
+        return extract_text_from_docx(uploaded_file)
+    raise ValueError("Formato não suportado. Usa PDF, DOCX ou TXT.")
