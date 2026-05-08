@@ -1,0 +1,217 @@
+import html
+import json
+from datetime import datetime
+
+import streamlit as st
+
+from file_readers import extract_text
+from text_pipeline import (
+    PipelineConfig,
+    clean_text,
+    detect_language,
+    chunk_text,
+    create_prompt,
+    pipeline_summary,
+)
+
+st.set_page_config(page_title="Pipeline de Limpeza e Prompt", layout="wide")
+
+st.title("Pipeline de Limpeza e Preparação do Prompt")
+st.write("Aplicação de: extração, limpeza, chunking, deteção de idioma e geração de prompt.")
+
+uploaded_file = st.file_uploader(
+    "Carrega um ficheiro PDF, DOCX ou TXT",
+    type=["pdf", "docx", "txt"]
+)
+
+with st.sidebar:
+    st.header("Configuração da pipeline")
+
+    config = PipelineConfig(
+        remove_artifacts=st.checkbox("Remover artefactos", True),
+        normalize_unicode=st.checkbox("Normalizar Unicode", True),
+        normalize_spaces=st.checkbox("Normalizar espaços", True),
+        fix_line_breaks=st.checkbox("Corrigir quebras de linha", True),
+        rebuild_paragraphs=st.checkbox("Reconstruir parágrafos", True),
+        remove_repeated_headers_footers=st.checkbox(
+            "Remover cabeçalhos/rodapés repetidos",
+            True
+        ),
+        normalize_punctuation=st.checkbox("Normalizar pontuação", True),
+        chunk_size=st.slider(
+            "Tamanho do chunk",
+            500,
+            4000,
+            1800,
+            step=100
+        ),
+        chunk_overlap=st.slider(
+            "Sobreposição entre chunks",
+            0,
+            500,
+            150,
+            step=25
+        ),
+    )
+
+if uploaded_file is None:
+    st.info("Carrega um documento para começar.")
+    st.stop()
+
+try:
+    raw_text = extract_text(uploaded_file)
+
+    # PDF digitalizado ou sem texto
+    if raw_text is None or raw_text.strip() == "":
+        st.error(
+            "Não foi possível extrair texto do ficheiro.\n\n"
+            "O documento pode ser um PDF digitalizado (imagem) "
+            "ou não conter texto selecionável."
+        )
+        st.stop()
+
+except Exception as exc:
+    st.error(f"Erro ao extrair texto: {exc}")
+    st.stop()
+
+cleaned_text, steps = clean_text(raw_text, config)
+
+language = detect_language(cleaned_text)
+
+chunks = chunk_text(
+    cleaned_text,
+    config.chunk_size,
+    config.chunk_overlap
+)
+
+prompts = [
+    create_prompt(chunk, language)
+    for chunk in chunks
+]
+
+summary = pipeline_summary(
+    config,
+    steps,
+    language,
+    chunks
+)
+
+st.subheader("1. Texto extraído sem transformação")
+
+st.text_area(
+    "Texto bruto",
+    raw_text,
+    height=280
+)
+
+st.subheader("2. Texto depois da limpeza")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.write("**Antes**")
+
+    st.text_area(
+        "Antes da limpeza",
+        raw_text,
+        height=350,
+        key="before"
+    )
+
+with col2:
+    st.write("**Depois**")
+
+    st.text_area(
+        "Depois da limpeza",
+        cleaned_text,
+        height=350,
+        key="after"
+    )
+
+st.subheader("3. Preparação do input para normalização")
+
+st.write(f"**Idioma detetado:** `{language}`")
+st.write(f"**Número de chunks:** `{len(chunks)}`")
+
+for i, chunk in enumerate(chunks, start=1):
+
+    with st.expander(f"Chunk {i} ({len(chunk)} caracteres)"):
+
+        st.text_area(
+            f"Texto do chunk {i}",
+            chunk,
+            height=180
+        )
+
+        st.text_area(
+            f"Prompt gerado para o chunk {i}",
+            prompts[i - 1],
+            height=260
+        )
+
+st.subheader("Resumo da pipeline")
+
+st.json(summary)
+
+report_html = f"""
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Relatório - Pipeline de Limpeza</title>
+
+  <style>
+    body {{
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.5;
+    }}
+
+    pre {{
+        white-space: pre-wrap;
+        border: 1px solid #ddd;
+        padding: 12px;
+        background: #f7f7f7;
+    }}
+
+    h1, h2 {{
+        color: #222;
+    }}
+  </style>
+</head>
+
+<body>
+
+  <h1>Relatório - Pipeline de Limpeza e Preparação do Prompt</h1>
+
+  <p>
+    <strong>Data:</strong>
+    {datetime.now().strftime('%Y-%m-%d %H:%M')}
+  </p>
+
+  <h2>Configuração e etapas</h2>
+
+  <pre>{html.escape(json.dumps(summary, ensure_ascii=False, indent=2))}</pre>
+
+  <h2>Texto original</h2>
+
+  <pre>{html.escape(raw_text)}</pre>
+
+  <h2>Texto limpo</h2>
+
+  <pre>{html.escape(cleaned_text)}</pre>
+
+  <h2>Primeiro prompt gerado</h2>
+
+  <pre>{html.escape(prompts[0] if prompts else '')}</pre>
+
+</body>
+</html>
+"""
+
+st.download_button(
+    "Descarregar relatório HTML",
+    data=report_html,
+    file_name="relatorio_pipeline.html",
+    mime="text/html",
+)
