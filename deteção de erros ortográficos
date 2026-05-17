@@ -1,0 +1,9 @@
+def detect_spelling_errors(text: str):
+
+    spell = SpellChecker(language='pt')
+
+    words = re.findall(r'\b\w+\b', text.lower())
+
+    errors = spell.unknown(words)
+
+    return list(errors)
