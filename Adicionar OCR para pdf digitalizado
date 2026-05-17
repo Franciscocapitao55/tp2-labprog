@@ -1,0 +1,14 @@
+def extract_text_from_scanned_pdf(file):
+
+    images = convert_from_bytes(file.read())
+
+    text = ""
+
+    for image in images:
+
+        text += pytesseract.image_to_string(
+            image,
+            lang="por"
+        )
+
+    return text
