@@ -1,0 +1,10 @@
+errors = detect_spelling_errors(raw_text)
+
+if len(errors) >= 1:
+
+    st.error("O texto contém erros.")
+
+    for word in errors:
+        st.write(word)
+
+    st.stop()
