@@ -1,0 +1,6 @@
+st.download_button(
+    "Descarregar relatório HTML",
+    data=report_html,
+    file_name="relatorio_pipeline.html",
+    mime="text/html",
+)
