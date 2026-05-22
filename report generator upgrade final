@@ -1,0 +1,152 @@
+import html
+import json
+
+from datetime import datetime
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
+
+from reportlab.lib.styles import (
+    getSampleStyleSheet
+)
+
+# HTML
+
+def generate_html_report(summary, raw_text, cleaned_text):
+    return f"""
+<!doctype html>
+
+<html lang="pt">
+
+<head>
+
+<meta charset="utf-8">
+
+<title>Relatório TextMind AI</title>
+
+<style>
+
+body {{
+
+    font-family: Arial;
+
+    margin: 40px;
+
+    background-color: #f5f5f5;
+}}
+
+.container {{
+
+    background: white;
+
+    padding: 30px;
+
+    border-radius: 10px;
+}}
+
+pre {{
+
+    white-space: pre-wrap;
+
+    border: 1px solid #ddd;
+
+    padding: 15px;
+
+    background: #fafafa;
+}}
+
+h1 {{
+
+    color: #111827;
+}}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🧠 Relatório TextMind AI</h1>
+
+<p>
+{datetime.now().strftime('%Y-%m-%d %H:%M')}
+</p>
+
+<h2>Resumo</h2>
+
+<pre>
+{html.escape(json.dumps(summary, ensure_ascii=False, indent=2))}
+</pre>
+
+<h2>Texto Original</h2>
+
+<pre>
+{html.escape(raw_text)}
+</pre>
+
+<h2>Texto Corrigido</h2>
+
+<pre>
+{html.escape(cleaned_text)}
+</pre>
+
+</div>
+
+</body>
+
+</html>
+"""
+
+# PDF
+
+def generate_pdf_report(summary, raw_text, cleaned_text):
+    filename = "relatorio_pipeline.pdf"
+
+    doc = SimpleDocTemplate(filename)
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    elements.append(
+        Paragraph(
+            "🧠 Relatório TextMind AI",
+            styles['Title']
+        )
+    )
+
+    elements.append(Spacer(1, 20))
+
+    elements.append(
+        Paragraph(
+            str(summary),
+            styles['BodyText']
+        )
+    )
+
+    elements.append(Spacer(1, 20))
+
+    elements.append(
+        Paragraph(
+            raw_text,
+            styles['BodyText']
+        )
+    )
+
+    elements.append(Spacer(1, 20))
+
+    elements.append(
+        Paragraph(
+            cleaned_text,
+            styles['BodyText']
+        )
+    )
+
+    doc.build(elements)
+
+    return filename
