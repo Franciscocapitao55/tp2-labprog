@@ -1,0 +1,93 @@
+import requests
+
+# URL SLM
+
+API_URL = "https://reality.utad.net/slm"
+
+# SLM
+
+def send_to_slm(text):
+
+    payload = {
+
+        "model": "llama-3.2-1b-instruct",
+
+        "messages": [
+
+            {
+
+                "role": "user",
+
+                "content": f"""
+
+Analisa o seguinte texto.
+
+Objetivos:
+- resumir;
+- identificar tópicos principais;
+- melhorar clareza;
+- normalizar conteúdo.
+
+Texto:
+{text}
+
+"""
+            }
+        ]
+    }
+
+    try:
+
+        response = requests.post(
+
+            API_URL,
+
+            json=payload,
+
+            timeout=300
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            if (
+
+                "choices" in data
+
+                and len(data["choices"]) > 0
+
+            ):
+
+                return data["choices"][0][
+
+                    "message"
+
+                ]["content"]
+
+            return str(data)
+
+        return (
+            f"Erro do modelo: "
+            f"{response.status_code}"
+        )
+
+    except requests.Timeout:
+
+        return (
+            "O modelo demorou demasiado "
+            "tempo a responder."
+        )
+
+    except requests.ConnectionError:
+
+        return (
+            "Não foi possível estabelecer "
+            "ligação ao modelo."
+        )
+
+    except Exception as e:
+
+        return (
+            f"Erro inesperado: {e}"
+        )
