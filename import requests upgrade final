@@ -1,0 +1,44 @@
+import requests
+
+
+def send_to_slm(prompt: str):
+
+    url = "https://reality.utad.net/slm"
+
+    payload = {
+        "model": "llama-3.2-1b-instruct",
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
+
+    try:
+
+        response = requests.post(
+            url,
+            json=payload
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            if "choices" in data:
+
+                return data[
+                    "choices"
+                ][0]["message"]["content"]
+
+            return str(data)
+
+        return (
+            f"Erro API: "
+            f"{response.status_code}"
+        )
+
+    except Exception as e:
+
+        return f"Erro: {e}"
