@@ -1,0 +1,24 @@
+def detect_spelling_errors(text):
+
+    words = text.split()
+
+    misspelled = spell.unknown(words)
+
+    errors = []
+
+    for word in misspelled:
+
+        suggestion = spell.correction(word)
+
+        if suggestion is None:
+
+            suggestion = "Sem sugestão"
+
+        errors.append({
+
+            "erro": word,
+
+            "sugestao": suggestion
+        })
+
+    return errors
