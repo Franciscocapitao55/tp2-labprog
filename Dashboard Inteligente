@@ -1,0 +1,202 @@
+import streamlit as st
+
+from report_generator import (
+    generate_html_report,
+    generate_pdf_report
+)
+
+# Dashboard
+
+def show_dashboard(
+
+    raw_text,
+    cleaned_text,
+    errors,
+    steps,
+    language
+):
+
+    st.markdown(
+        "## 📊 Dashboard Inteligente"
+    )
+
+    # Métricas
+
+    d1, d2, d3 = st.columns(3)
+
+    with d1:
+
+        st.info(
+            f"🌍 Idioma: {language.upper()}"
+        )
+
+    with d2:
+
+        st.warning(
+            f"⚠️ Correções: {len(errors)}"
+        )
+
+    with d3:
+
+        st.success(
+            f"📝 Palavras: {len(cleaned_text.split())}"
+        )
+
+    st.divider()
+
+    # Estatísticas
+
+    st.markdown(
+        "## 📈 Estatísticas"
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+
+        st.info(
+            f"🔠 Caracteres\n\n{len(cleaned_text)}"
+        )
+
+    with c2:
+
+        st.success(
+            f"📝 Palavras\n\n{len(cleaned_text.split())}"
+        )
+
+    with c3:
+
+        st.warning(
+            f"⚠️ Erros\n\n{len(errors)}"
+        )
+
+    with c4:
+
+        st.error(
+            f"🔄 Transformações\n\n{len(steps)}"
+        )
+
+    st.divider()
+
+    # Comparação
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.subheader(
+            "📄 Texto Original"
+        )
+
+        st.text_area(
+
+            "",
+
+            raw_text,
+
+            height=350,
+
+            disabled=True,
+
+            key="report_original"
+        )
+
+    with col2:
+
+        st.subheader(
+            "🧹 Texto Corrigido"
+        )
+
+        st.text_area(
+
+            "",
+
+            cleaned_text,
+
+            height=350,
+
+            disabled=True,
+
+            key="report_clean"
+        )
+
+    st.divider()
+
+    # Exportação
+
+    st.subheader(
+        "📥 Exportação de Relatório"
+    )
+
+    st.info(
+        "Escolhe o formato para exportar "
+        "o relatório final."
+    )
+
+    report_type = st.radio(
+
+        "Formato do relatório",
+
+        ["HTML", "PDF"],
+
+        horizontal=True
+    )
+
+    summary = {
+
+        "Idioma": language,
+
+        "Erros": len(errors),
+
+        "Palavras": len(cleaned_text.split()),
+
+        "Caracteres": len(cleaned_text),
+
+        "Transformações": len(steps)
+    }
+
+    # HTML
+
+    if report_type == "HTML":
+
+        report_html = generate_html_report(
+
+            summary,
+            raw_text,
+            cleaned_text
+        )
+
+        st.download_button(
+
+            "⬇️ Exportar Relatório HTML",
+
+            data=report_html,
+
+            file_name="relatorio.html",
+
+            mime="text/html"
+        )
+
+    # PDF
+
+    else:
+
+        pdf_file = generate_pdf_report(
+
+            summary,
+            raw_text,
+            cleaned_text
+        )
+
+        with open(pdf_file, "rb") as f:
+
+            st.download_button(
+
+                "⬇️ Exportar Relatório PDF",
+
+                data=f,
+
+                file_name="relatorio.pdf",
+
+                mime="application/pdf"
+            )
