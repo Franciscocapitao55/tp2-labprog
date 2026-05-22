@@ -1,0 +1,38 @@
+import html
+
+
+def generate_report(
+    raw_text,
+    cleaned_text,
+    prompts
+):
+
+    return f"""
+<html>
+
+<body>
+
+<h1>Relatório</h1>
+
+<h2>Texto Original</h2>
+
+<pre>
+{html.escape(raw_text)}
+</pre>
+
+<h2>Texto Limpo</h2>
+
+<pre>
+{html.escape(cleaned_text)}
+</pre>
+
+<h2>Primeiro Prompt</h2>
+
+<pre>
+{html.escape(prompts[0])}
+</pre>
+
+</body>
+
+</html>
+"""
