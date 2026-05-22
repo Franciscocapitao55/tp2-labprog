@@ -1,0 +1,179 @@
+import streamlit as st
+
+from ui_components import (
+    setup_page,
+    show_header,
+    show_cards,
+    show_pipeline,
+    show_metrics,
+    show_quality_score
+)
+
+from file_readers import extract_text
+
+from text_pipeline import (
+    clean_text,
+    detect_language,
+    detect_spelling_errors,
+    calculate_quality_score,
+    chunk_text,
+    create_prompt
+)
+
+from tabs import (
+    show_document_tab,
+    show_correction_tab,
+    show_chunks_tab,
+    show_ai_tab,
+    show_report_tab
+)
+
+# UI
+
+setup_page()
+
+show_header()
+
+show_cards()
+
+show_pipeline()
+
+# Upload
+
+uploaded_file = st.file_uploader(
+
+    "📂 Carrega um documento",
+
+    type=["pdf", "docx", "txt"]
+)
+
+if uploaded_file is None:
+
+    st.info(
+        "Carrega um documento para iniciar a análise."
+    )
+
+    st.stop()
+
+# Processamento
+
+with st.spinner(
+    "🔍 A processar documento..."
+):
+
+    raw_text = extract_text(
+        uploaded_file
+    )
+
+    # erros ortográficos
+    errors = detect_spelling_errors(
+        raw_text
+    )
+
+    # limpeza texto
+    cleaned_text, steps = clean_text(
+        raw_text
+    )
+
+    # idioma
+    language = detect_language(
+        cleaned_text
+    )
+
+    # qualidade
+    quality_score = calculate_quality_score(
+        len(errors)
+    )
+
+    # chunking
+    chunks = chunk_text(
+        cleaned_text
+    )
+
+    # prompts
+    prompts = [
+
+        create_prompt(
+            chunk,
+            language
+        )
+
+        for chunk in chunks
+    ]
+
+# Métricas
+
+show_metrics(
+
+    language,
+    errors,
+    cleaned_text
+)
+
+show_quality_score(
+    quality_score
+)
+
+# Tabs
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+
+    "📄 Documento",
+
+    "🧹 Correção",
+
+    "🧩 Chunks",
+
+    "🤖 IA",
+
+    "📊 Relatório"
+])
+
+# Documento
+
+with tab1:
+
+    show_document_tab(
+        raw_text
+    )
+
+# Correção
+
+with tab2:
+
+    show_correction_tab(
+
+        raw_text,
+        errors,
+        cleaned_text
+    )
+
+# Chunks
+
+with tab3:
+
+    show_chunks_tab(
+        chunks,
+        prompts
+    )
+
+# IA
+
+with tab4:
+
+    show_ai_tab(
+        cleaned_text
+    )
+
+# Relatório
+
+with tab5:
+
+    show_report_tab(
+
+        raw_text,
+        cleaned_text,
+        errors,
+        steps,
+        language
+    )
