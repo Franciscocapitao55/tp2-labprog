@@ -1,0 +1,295 @@
+import streamlit as st
+
+from api_handler import send_to_slm
+
+from dashboard import show_dashboard
+
+# =========================================
+# DOCUMENTO
+# =========================================
+
+def show_document_tab(raw_text):
+
+    st.subheader(
+        "📄 Texto Original"
+    )
+
+    st.text_area(
+
+        "",
+
+        raw_text,
+
+        height=450,
+
+        disabled=True,
+
+        key="raw_text"
+    )
+
+# =========================================
+# CORREÇÃO
+# =========================================
+
+def show_correction_tab(
+
+    raw_text,
+    errors,
+    cleaned_text
+):
+
+    st.subheader(
+        "🧹 Correção Ortográfica e Limpeza"
+    )
+
+    st.info(
+        "Comparação entre o texto original "
+        "e o texto após processamento."
+    )
+
+    # =====================================
+    # COMPARAÇÃO
+    # =====================================
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown(
+            "### 📄 Texto Original"
+        )
+
+        st.text_area(
+
+            "",
+
+            raw_text,
+
+            height=350,
+
+            disabled=True,
+
+            key="original_compare"
+        )
+
+    with col2:
+
+        st.markdown(
+            "### 🧹 Texto Corrigido"
+        )
+
+        st.text_area(
+
+            "",
+
+            cleaned_text,
+
+            height=350,
+
+            disabled=True,
+
+            key="corrected_compare"
+        )
+
+    st.divider()
+
+    # =====================================
+    # TRANSFORMAÇÕES
+    # =====================================
+
+    st.subheader(
+        "⚙️ Transformações Aplicadas"
+    )
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+
+        st.success(
+            "✔ Artefactos removidos"
+        )
+
+        st.success(
+            "✔ Unicode normalizado"
+        )
+
+    with c2:
+
+        st.success(
+            "✔ Linhas corrigidas"
+        )
+
+        st.success(
+            "✔ Espaços normalizados"
+        )
+
+    with c3:
+
+        st.success(
+            "✔ Cabeçalhos removidos"
+        )
+
+        st.success(
+            "✔ Chunking aplicado"
+        )
+
+    st.divider()
+
+    # =====================================
+    # ERROS
+    # =====================================
+
+    st.subheader(
+        "⚠️ Correções Detetadas"
+    )
+
+    if errors:
+
+        for error in errors:
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+
+                st.error(
+                    error["erro"]
+                )
+
+            with c2:
+
+                st.success(
+                    error["sugestao"]
+                )
+
+    else:
+
+        st.success(
+            "Sem erros encontrados."
+        )
+
+# =========================================
+# CHUNKS
+# =========================================
+
+def show_chunks_tab(
+
+    chunks,
+    prompts
+):
+
+    st.subheader(
+        "🧩 Divisão Inteligente do Texto"
+    )
+
+    st.info(
+        "O texto é dividido automaticamente "
+        "para otimizar o processamento "
+        "pelo modelo SLM."
+    )
+
+    st.write(
+        f"Total de chunks gerados: {len(chunks)}"
+    )
+
+    for i, chunk in enumerate(
+
+        chunks,
+        start=1
+    ):
+
+        with st.expander(
+
+            f"Chunk {i}"
+        ):
+
+            st.text_area(
+
+                f"Texto chunk {i}",
+
+                chunk,
+
+                height=200,
+
+                disabled=True,
+
+                key=f"chunk_{i}"
+            )
+
+            st.text_area(
+
+                f"Prompt {i}",
+
+                prompts[i - 1],
+
+                height=220,
+
+                disabled=True,
+
+                key=f"prompt_{i}"
+            )
+
+# =========================================
+# IA
+# =========================================
+
+def show_ai_tab(cleaned_text):
+
+    st.subheader(
+        "🤖 Modelo de Inteligência Artificial"
+    )
+
+    st.info(
+        "O texto processado será enviado "
+        "para o modelo SLM."
+    )
+
+    if st.button(
+        "🚀 Processar Texto"
+    ):
+
+        with st.spinner(
+            "🤖 O modelo SLM está a processar o texto..."
+        ):
+
+            response = send_to_slm(
+                cleaned_text
+            )
+
+        st.success(
+            "Processamento concluído."
+        )
+
+        st.text_area(
+
+            "Resposta do modelo",
+
+            response,
+
+            height=400,
+
+            disabled=True,
+
+            key="ia_response"
+        )
+
+# =========================================
+# RELATÓRIO
+# =========================================
+
+def show_report_tab(
+
+    raw_text,
+    cleaned_text,
+    errors,
+    steps,
+    language
+):
+
+    show_dashboard(
+
+        raw_text,
+        cleaned_text,
+        errors,
+        steps,
+        language
+    )
