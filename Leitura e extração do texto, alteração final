@@ -1,0 +1,170 @@
+from pathlib import Path
+
+from typing import BinaryIO
+
+from pypdf import PdfReader
+
+from docx import Document
+
+import pytesseract
+
+from pdf2image import convert_from_bytes
+
+# TXT
+
+def extract_text_from_txt(
+
+    file: BinaryIO
+
+) -> str:
+
+    return file.read().decode(
+
+        "utf-8",
+
+        errors="ignore"
+    )
+
+# OCR PDF
+
+def extract_text_from_scanned_pdf(
+
+    file: BinaryIO
+
+) -> str:
+
+    try:
+
+        text = ""
+
+        images = convert_from_bytes(
+            file.read()
+        )
+
+        for image in images:
+
+            page_text = pytesseract.image_to_string(
+
+                image,
+
+                lang="por"
+            )
+
+            text += page_text + "\n"
+
+        return text.strip()
+
+    except:
+
+        return (
+            "⚠️ OCR indisponível. "
+            "O Poppler não está instalado."
+        )
+
+# PDF
+
+def extract_text_from_pdf(
+
+    file: BinaryIO
+
+) -> str:
+
+    try:
+
+        reader = PdfReader(file)
+
+        pages = []
+
+        for index, page in enumerate(
+
+            reader.pages,
+
+            start=1
+        ):
+
+            text = page.extract_text() or ""
+
+            pages.append(
+
+                f"""
+
+--- Página {index} ---
+
+{text}
+
+"""
+            )
+
+        final_text = "\n".join(
+            pages
+        ).strip()
+
+        if len(final_text.strip()) < 20:
+
+            file.seek(0)
+
+            return extract_text_from_scanned_pdf(
+                file
+            )
+
+        return final_text
+
+    except:
+
+        return (
+            "⚠️ Não foi possível "
+            "ler o PDF."
+        )
+
+# DOCX
+
+def extract_text_from_docx(
+
+    file: BinaryIO
+
+) -> str:
+
+    document = Document(file)
+
+    paragraphs = [
+
+        p.text
+
+        for p in document.paragraphs
+    ]
+
+    return "\n".join(
+        paragraphs
+    ).strip()
+
+# Main
+
+def extract_text(uploaded_file):
+
+    suffix = Path(
+
+        uploaded_file.name
+
+    ).suffix.lower()
+
+    if suffix == ".txt":
+
+        return extract_text_from_txt(
+            uploaded_file
+        )
+
+    if suffix == ".pdf":
+
+        return extract_text_from_pdf(
+            uploaded_file
+        )
+
+    if suffix == ".docx":
+
+        return extract_text_from_docx(
+            uploaded_file
+        )
+
+    raise ValueError(
+        "Formato não suportado."
+    )
